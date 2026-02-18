@@ -24,16 +24,23 @@ export default {
 }
 </script>
 
+
+
 <style lang='scss' scoped>
 .layout {
-  overflow-y: hidden;
+  overflow-y: hidden; /* 外层禁止滚动，固定住上下导航栏 */
 }
 
 .layout-main {
   width: 100vw;
-  height: calc(100vh - 96px);
+  height: calc(100vh - 96px); /* 减去顶部导航和底部菜单的高度 */
   margin-top: 46px;
   margin-bottom: 50px;
   background-color: #f1f1f1;
+
+  /* 核心修复：允许这块核心区域在 Y轴(上下) 出现滚动条 */
+  overflow-y: auto;
+  /* 平滑滚动（针对移动端触屏的优化） */
+  -webkit-overflow-scrolling: touch;
 }
 </style>

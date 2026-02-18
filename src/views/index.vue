@@ -72,8 +72,26 @@
         </div>
         <van-form ref='formRef' @submit='submit' label-width='70px'>
           <van-field v-model='form.title' label='需求标题' placeholder='一句话描述您的搬家需求' :rules="[{ required: true, message: '请填写标题' }]" />
-          <van-field v-model='form.content' type='textarea' rows="2" autosize label='详细内容' placeholder='请描述需要搬运的物品、楼层等信息' :rules="[{ required: true, message: '请填写内容' }]" maxlength="200" show-word-limit />
-          <van-field v-model='form.address' type='textarea' rows="1" autosize label='详细地址' placeholder='请输入起止地址' :rules="[{ required: true, message: '请填写地址' }]" />
+          <van-field v-model='form.content' type='textarea' rows="2" autosize label='详细内容' placeholder='请描述需要搬运的物品等' :rules="[{ required: true, message: '请填写内容' }]" maxlength="200" show-word-limit />
+
+          <van-field v-model='form.originAddress' type='textarea' rows="1" autosize label='搬出地址' placeholder='请输入起点详细地址(含门牌号)' :rules="[{ required: true, message: '请填写搬出地址' }]" />
+          <van-field v-model='form.destinationAddress' type='textarea' rows="1" autosize label='搬入地址' placeholder='请输入终点详细地址(含门牌号)' :rules="[{ required: true, message: '请填写搬入地址' }]" />
+
+          <van-field v-model='form.distance' type='number' label='预估距离' placeholder='大概多少公里' >
+            <template #right-icon><span>公里</span></template>
+          </van-field>
+          <van-field v-model='form.floor' type='digit' label='搬运楼层' placeholder='无电梯时需爬几楼(填数字)' :rules="[{ required: true, message: '请填写楼层' }]" />
+
+          <van-field label='有无电梯' :rules="[{ required: true, message: '请选择是否有电梯' }]">
+            <template #input>
+              <van-radio-group v-model='form.hasElevator' direction='horizontal'>
+                <van-radio :name='1' checked-color="#4facfe">有电梯</van-radio>
+                <van-radio :name='0' checked-color="#4facfe">无电梯(需爬楼)</van-radio>
+              </van-radio-group>
+            </template>
+          </van-field>
+
+          <van-field v-model='form.goodsDesc' type='textarea' rows="2" autosize label='物品补充' placeholder='是否有贵重家电、大件物品等' maxlength="100" show-word-limit />
 
           <van-field label='封面主图'>
             <template #input>
@@ -153,7 +171,13 @@ export default {
         address: '',
         cover: '',
         imgs: '',
-        imgArr: []
+        imgArr: [],
+        originAddress: '',
+        destinationAddress: '',
+        distance: '',
+        floor: 1,
+        hasElevator: 1,
+        goodsDesc: ''
       },
       valuationForm: {
         id: 0,
@@ -201,6 +225,12 @@ export default {
     async submit() {
       this.form.imgs = this.form.imgArr.map(item => item.img).join(',')
       this.form.cover = this.covers[0]?.img || ''
+
+      // 自动拼接简略地址，满足数据库 address 不为空的校验，并在列表中展示
+      if(this.form.originAddress && this.form.destinationAddress) {
+        this.form.address = this.form.originAddress + ' -> ' + this.form.destinationAddress
+      }
+
       if (this.form.id) {
         await updatePublishApi(this.form)
       } else {
@@ -234,7 +264,9 @@ export default {
       this.floatShow = false
       this.form = { ...item, imgArr: [] }
       this.covers = [{ url: this.$baseUrl + item.cover, img: item.cover }]
-      this.form.imgArr = item.imgs.split(',').map(img => ({ url: this.$baseUrl + img, img }))
+      if(item.imgs) {
+        this.form.imgArr = item.imgs.split(',').map(img => ({ url: this.$baseUrl + img, img }))
+      }
     },
     onAdd() {
       this.popupShow = true
@@ -245,7 +277,13 @@ export default {
         address: '',
         cover: '',
         imgs: '',
-        imgArr: []
+        imgArr: [],
+        originAddress: '',
+        destinationAddress: '',
+        distance: '',
+        floor: 1,
+        hasElevator: 1,
+        goodsDesc: ''
       }
       this.covers = []
     },
@@ -270,226 +308,15 @@ export default {
 </script>
 
 <style lang='scss' scoped>
-.container {
-  min-height: 100vh;
-  background-color: #f7f8fa;
-  padding-bottom: 20px;
-}
-
-/* 提示轮播横幅 */
-.tip-banner {
-  background-color: #fffbe8;
-  color: #ed6a0c;
-  padding: 0 16px;
-
-  .notice-swipe {
-    height: 40px;
-    line-height: 40px;
-  }
-
-  .tip-item {
-    display: flex;
-    align-items: center;
-    font-size: 14px;
-
-    .tip-icon {
-      font-size: 18px;
-      margin-right: 8px;
-    }
-
-    .tip-text {
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .tip-arrow {
-      font-size: 14px;
-      opacity: 0.6;
-    }
-  }
-}
-
-/* 列表容器 */
-.publish-list {
-  padding: 16px;
-  padding-bottom: 100px;
-}
-
-/* 单个卡片样式 */
-.publish-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s;
-
-  &:active {
-    transform: scale(0.98);
-  }
-
-  /* 卡片头 */
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #f5f6f7;
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      color: #323233;
-      font-weight: 500;
-      font-size: 14px;
-
-      .van-icon {
-        color: #1989fa;
-        margin-right: 6px;
-      }
-    }
-
-    .time {
-      font-size: 12px;
-      color: #969799;
-    }
-  }
-
-  /* 卡片体 */
-  .card-body {
-    display: flex;
-    margin-bottom: 12px;
-
-    .cover-img {
-      width: 90px;
-      height: 70px;
-      flex-shrink: 0;
-      border: 1px solid #f0f0f0;
-    }
-
-    .content-text {
-      margin-left: 12px;
-      flex: 1;
-      overflow: hidden;
-
-      .title {
-        margin: 0 0 6px 0;
-        font-size: 16px;
-        color: #323233;
-      }
-
-      .desc {
-        margin: 0;
-        font-size: 13px;
-        color: #646566;
-        line-height: 1.4;
-      }
-    }
-  }
-
-  /* 卡片底部 */
-  .card-footer {
-    background-color: #fcfcfd;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 12px;
-
-    .address {
-      margin: 0 0 6px 0;
-      font-size: 13px;
-      color: #646566;
-      display: flex;
-      align-items: center;
-
-      .van-icon {
-        margin-right: 4px;
-        color: #ee0a24;
-      }
-    }
-
-    .price-wrap {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-
-      .price-label {
-        font-size: 13px;
-        color: #969799;
-      }
-
-      .price-value {
-        font-size: 16px;
-        font-weight: bold;
-        color: #ff5722;
-      }
-    }
-  }
-
-  /* 按钮区 */
-  .card-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px; /* 按钮之间的间距 */
-  }
-}
-
-/* 弹窗通用样式 */
-.form-popup {
-  max-height: 90vh;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-}
-
-.form-container {
-  padding: 0 16px 20px;
-
-  .form-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0;
-
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      color: #323233;
-    }
-  }
-}
-
-.submit-btn-wrap {
-  margin-top: 24px;
-  padding: 0 16px;
-}
-
-/* 提示详情弹窗 */
-.tip-popup, .valuation-popup {
-  width: 85%;
-  padding: 24px 20px;
-  box-sizing: border-box;
-}
-
-.tip-content {
-  .tip-popup-title {
-    margin: 0;
-    text-align: center;
-    color: #323233;
-  }
-
-  .html-content {
-    font-size: 14px;
-    color: #646566;
-    line-height: 1.6;
-    max-height: 50vh;
-    overflow-y: auto;
-  }
-}
-
-.valuation-content h3 {
-  text-align: center;
-  margin-top: 0;
-}
+/* 保持你原本的样式不变，这里仅给出原封不动的样式代码 */
+.container { min-height: 100vh; background-color: #f7f8fa; padding-bottom: 20px; }
+.tip-banner { background-color: #fffbe8; color: #ed6a0c; padding: 0 16px; .notice-swipe { height: 40px; line-height: 40px; } .tip-item { display: flex; align-items: center; font-size: 14px; .tip-icon { font-size: 18px; margin-right: 8px; } .tip-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tip-arrow { font-size: 14px; opacity: 0.6; } } }
+.publish-list { padding: 16px; padding-bottom: 100px; }
+.publish-card { background: #ffffff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); transition: transform 0.2s; &:active { transform: scale(0.98); } .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f5f6f7; .user-info { display: flex; align-items: center; color: #323233; font-weight: 500; font-size: 14px; .van-icon { color: #1989fa; margin-right: 6px; } } .time { font-size: 12px; color: #969799; } } .card-body { display: flex; margin-bottom: 12px; .cover-img { width: 90px; height: 70px; flex-shrink: 0; border: 1px solid #f0f0f0; } .content-text { margin-left: 12px; flex: 1; overflow: hidden; .title { margin: 0 0 6px 0; font-size: 16px; color: #323233; } .desc { margin: 0; font-size: 13px; color: #646566; line-height: 1.4; } } } .card-footer { background-color: #fcfcfd; border-radius: 8px; padding: 10px; margin-bottom: 12px; .address { margin: 0 0 6px 0; font-size: 13px; color: #646566; display: flex; align-items: center; .van-icon { margin-right: 4px; color: #ee0a24; } } .price-wrap { display: flex; justify-content: space-between; align-items: center; .price-label { font-size: 13px; color: #969799; } .price-value { font-size: 16px; font-weight: bold; color: #ff5722; } } } .card-actions { display: flex; justify-content: flex-end; gap: 8px; } }
+.form-popup { max-height: 90vh; border-top-left-radius: 20px; border-top-right-radius: 20px; }
+.form-container { padding: 0 16px 20px; .form-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; h3 { margin: 0; font-size: 18px; color: #323233; } } }
+.submit-btn-wrap { margin-top: 24px; padding: 0 16px; }
+.tip-popup, .valuation-popup { width: 85%; padding: 24px 20px; box-sizing: border-box; }
+.tip-content { .tip-popup-title { margin: 0; text-align: center; color: #323233; } .html-content { font-size: 14px; color: #646566; line-height: 1.6; max-height: 50vh; overflow-y: auto; } }
+.valuation-content h3 { text-align: center; margin-top: 0; }
 </style>

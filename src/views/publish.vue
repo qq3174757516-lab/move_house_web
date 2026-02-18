@@ -30,7 +30,18 @@
     </div>
 
     <van-cell-group inset class="detail-cells">
-      <van-cell title='地址' icon="location-o" :value='publish.address' />
+      <van-cell title='搬出地址' icon="location-o" :value='publish.originAddress' />
+      <van-cell title='搬入地址' icon="guide-o" :value='publish.destinationAddress' />
+      <van-cell title='预估距离' icon="logistics" :value="publish.distance ? publish.distance + ' 公里' : '未提供'" />
+      <van-cell title='电梯情况' icon="wap-home-o">
+        <template #right-icon>
+          <van-tag :type="publish.hasElevator === 1 ? 'success' : 'danger'">
+            {{ publish.hasElevator === 1 ? '有电梯' : `无电梯 (需爬 ${publish.floor || 1} 楼)` }}
+          </van-tag>
+        </template>
+      </van-cell>
+      <van-cell v-if="publish.goodsDesc" title='物品补充' icon="comment-o" :label='publish.goodsDesc' />
+
       <van-cell title='发布者' icon="contact" :value='publish.username' />
       <van-cell title='发布时间' icon="clock-o" :value='publish.createTime' />
     </van-cell-group>
@@ -71,21 +82,12 @@
 
 <script>
 import {
-  pagePublishApi,
-  createPublishApi,
-  deletePublishApi,
-  updatePublishApi,
-  valuationPublishApi,
-  processPublishApi,
-  findPublishApi
+  findPublishApi,
+  valuationPublishApi
 } from '@/api/publish'
-import { uploadApi } from '@/api/file'
-import { listTipApi } from '@/api/tip'
-import FloatBtn from '@/components/FloatBtn.vue'
 import { mapState } from 'vuex'
 
 export default {
-  components: { FloatBtn },
   data() {
     return {
       id: null,
@@ -117,8 +119,10 @@ export default {
     },
     async findPublish() {
       const { data } = await findPublishApi(this.id)
-      data.imgArr = data.imgs.split(',').filter(e => !!e)
-      data.imgArr.unshift(data.cover)
+      data.imgArr = data.imgs ? data.imgs.split(',').filter(e => !!e) : []
+      if (data.cover) {
+        data.imgArr.unshift(data.cover)
+      }
       this.publish = data
     }
   },
@@ -133,123 +137,13 @@ export default {
 </script>
 
 <style lang='scss' scoped>
-.publish-detail-container {
-  min-height: 100vh;
-  background-color: #f7f8fa;
-  padding-bottom: 100px; /* 给底部悬浮按钮留出空间 */
-}
-
-/* 轮播图 */
-.custom-swipe {
-  background-color: #fff;
-}
-.empty-image {
-  height: 260px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: #f7f8fa;
-  color: #969799;
-  font-size: 14px;
-}
-
-/* 详情卡片 */
-.info-card {
-  margin: -20px 16px 16px; /* 负边距让它悬浮在图片上 */
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  position: relative;
-  z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-
-    .title {
-      flex: 1;
-      margin: 0;
-      font-size: 18px;
-      color: #323233;
-      line-height: 1.4;
-      font-weight: bold;
-    }
-
-    .price-box {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      margin-left: 12px;
-
-      .price-label {
-        font-size: 12px;
-        color: #969799;
-      }
-      .price-value {
-        font-size: 18px;
-        font-weight: bold;
-        color: #ff5722;
-        margin-top: 2px;
-      }
-    }
-  }
-
-  .card-body {
-    .content-desc {
-      margin: 0;
-      font-size: 14px;
-      color: #646566;
-      line-height: 1.6;
-    }
-  }
-}
-
-.detail-cells {
-  margin-top: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-}
-
-/* 底部操作栏 */
-.bottom-action-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: #fff;
-  padding: 10px 16px 20px;
-  box-sizing: border-box;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-  z-index: 99;
-}
-
-/* 报价弹窗 */
-.valuation-popup {
-  width: 90%;
-  max-width: 340px;
-}
-
-.valuation-form {
-  padding: 24px 20px;
-  text-align: center;
-
-  h3 {
-    margin: 0;
-    font-size: 18px;
-    color: #323233;
-  }
-  .subtitle {
-    margin: 6px 0 20px;
-    font-size: 12px;
-    color: #969799;
-  }
-
-  .price-input {
-    background-color: #f7f8fa;
-    border-radius: 8px;
-    margin-bottom: 24px;
-  }
-}
+/* 保持原样式不变 */
+.publish-detail-container { min-height: 100vh; background-color: #f7f8fa; padding-bottom: 100px; }
+.custom-swipe { background-color: #fff; }
+.empty-image { height: 260px; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #f7f8fa; color: #969799; font-size: 14px; }
+.info-card { margin: -20px 16px 16px; background: #fff; border-radius: 12px; padding: 16px; position: relative; z-index: 10; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); .card-header { display: flex; justify-content: space-between; align-items: flex-start; .title { flex: 1; margin: 0; font-size: 18px; color: #323233; line-height: 1.4; font-weight: bold; } .price-box { display: flex; flex-direction: column; align-items: flex-end; margin-left: 12px; .price-label { font-size: 12px; color: #969799; } .price-value { font-size: 18px; font-weight: bold; color: #ff5722; margin-top: 2px; } } } .card-body { .content-desc { margin: 0; font-size: 14px; color: #646566; line-height: 1.6; } } }
+.detail-cells { margin-top: 16px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02); }
+.bottom-action-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #fff; padding: 10px 16px 20px; box-sizing: border-box; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05); z-index: 99; }
+.valuation-popup { width: 90%; max-width: 340px; }
+.valuation-form { padding: 24px 20px; text-align: center; h3 { margin: 0; font-size: 18px; color: #323233; } .subtitle { margin: 6px 0 20px; font-size: 12px; color: #969799; } .price-input { background-color: #f7f8fa; border-radius: 8px; margin-bottom: 24px; } }
 </style>
