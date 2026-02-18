@@ -27,6 +27,11 @@ const routes = [
       path: '/complaint',
       component: () => import('@/views/complaint.vue'),
       meta: { title: '我的投诉' }
+    }, {
+      // 新增地址簿路由，隐藏底部导航栏
+      path: '/address',
+      component: () => import('@/views/address.vue'),
+      meta: { title: '地址管理', hideTabbar: true }
     }]
   }, {
     path: '/login',

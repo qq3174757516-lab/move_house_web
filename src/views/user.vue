@@ -27,20 +27,10 @@
 
     <van-cell-group inset class="menu-group">
       <van-cell title='修改个人资料' is-link icon='edit' center clickable @click='infoPopup = true' />
-      <van-cell
-        v-if='userType === 3'
-        is-link center clickable
-        title='钱包充值中心'
-        icon='gold-coin-o'
-        @click='walletPopup = true'
-      />
-      <van-cell
-        v-if='userType === 2'
-        center clickable is-link
-        title='我的客诉记录'
-        icon='warning-o'
-        @click='$router.push("/complaint")'
-      />
+      <van-cell v-if='userType === 3' title='我的地址簿' is-link icon='location-o' center clickable @click='$router.push("/address")' />
+
+      <van-cell v-if='userType === 3' is-link center clickable title='钱包充值中心' icon='gold-coin-o' @click='walletPopup = true' />
+      <van-cell v-if='userType === 2' center clickable is-link title='我的客诉记录' icon='warning-o' @click='$router.push("/complaint")' />
     </van-cell-group>
 
     <div class="logout-wrap">
@@ -52,7 +42,6 @@
         <h3 class="popup-title">编辑资料</h3>
         <van-form @submit='onInfoSubmit' label-width="60px">
           <van-field v-if='userType === 3' v-model='form.nickname' clearable label='昵称' placeholder='请输入您的昵称' :rules="[{ required: true, message: '请填写昵称' }]" />
-
           <template v-if='userType === 2'>
             <van-field type='digit' v-model='form.age' clearable label='年龄' placeholder='请输入年龄' :rules="[{ required: true, message: '请填写年龄' }]" />
             <van-field type='digit' v-model='form.carAge' clearable label='驾龄' placeholder='请输入驾龄(年)' :rules="[{ required: true, message: '请填写驾龄' }]" />
@@ -65,15 +54,12 @@
               </template>
             </van-field>
           </template>
-
           <van-field v-model='form.password' type='password' label='新密码' placeholder='不修改请留空' />
-
           <van-field label='头像'>
             <template #input>
               <van-uploader v-model='form.avatars' :max-count='1' :before-read='beforeRead' :after-read='afterRead' />
             </template>
           </van-field>
-
           <div style='margin: 30px 16px 16px;'>
             <van-button round block type='info' color="linear-gradient(to right, #4facfe, #00f2fe)" native-type='submit'>保存修改</van-button>
           </div>
@@ -127,19 +113,14 @@ export default {
   },
   methods: {
     logout() {
-      this.$dialog.confirm({
-        title: '温馨提示',
-        message: '确认退出当前账号吗?'
-      }).then(() => {
+      this.$dialog.confirm({ title: '温馨提示', message: '确认退出当前账号吗?' }).then(() => {
         this.setUser({})
         this.changeLogin(false)
         this.$router.push('/login')
       }).catch(() => {})
     },
     async recharge() {
-      if (!this.amount || this.amount <= 0) {
-        return this.$toast('请输入有效的充值金额!')
-      }
+      if (!this.amount || this.amount <= 0) return this.$toast('请输入有效的充值金额!')
       await updateUserApi({ id: this.user.id, balance: +this.user.balance + +this.amount })
       await this.infoUser()
       this.$toast.success('充值成功!')
@@ -147,11 +128,8 @@ export default {
       this.amount = ''
     },
     async onInfoSubmit() {
-      if (this.userType === 3) {
-        await updateUserApi(this.form)
-      } else {
-        await updateDriverApi(this.form)
-      }
+      if (this.userType === 3) await updateUserApi(this.form)
+      else await updateDriverApi(this.form)
       this.$toast.success('修改成功!')
       this.infoPopup = false
       await this.infoUser()
@@ -169,19 +147,14 @@ export default {
     },
     async infoUser() {
       let data
-      if (this.userType === 3) {
-        data = (await infoUserApi()).data
-      } else {
-        data = (await infoDriverApi()).data
-      }
+      if (this.userType === 3) data = (await infoUserApi()).data
+      else data = (await infoDriverApi()).data
       this.user = { ...data }
       this.form = { ...data, avatars: [] }
     },
     ...mapActions(['setUser', 'changeLogin'])
   },
-  computed: {
-    ...mapState({ loginUser: state => state.user })
-  },
+  computed: { ...mapState({ loginUser: state => state.user }) },
   mounted() {
     this.userType = this.loginUser.userType
     this.infoUser()
@@ -190,162 +163,13 @@ export default {
 </script>
 
 <style lang='scss' scoped>
-.user-container {
-  min-height: 100vh;
-  background-color: #f7f8fa;
-}
-
-/* 顶部信息区 */
-.header-section {
-  height: 180px;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  padding: 30px 20px 0;
-  box-sizing: border-box;
-
-  .user-profile {
-    display: flex;
-    align-items: center;
-
-    .avatar-img {
-      border: 3px solid rgba(255, 255, 255, 0.4);
-    }
-
-    .header-info {
-      margin-left: 16px;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-
-      .name-row {
-        display: flex;
-        align-items: center;
-        margin-bottom: 6px;
-
-        .username {
-          font-size: 20px;
-          font-weight: bold;
-          margin-right: 8px;
-        }
-      }
-
-      .sub-name {
-        font-size: 13px;
-        opacity: 0.9;
-      }
-    }
-  }
-}
-
-/* 资产卡片悬浮 */
-.asset-card {
-  margin: -40px 16px 20px;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 24px 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 10;
-
-  .asset-info {
-    display: flex;
-    flex-direction: column;
-
-    .asset-title {
-      font-size: 13px;
-      color: #969799;
-      margin-bottom: 8px;
-    }
-
-    .asset-value {
-      font-size: 28px;
-      font-weight: bold;
-      color: #323233;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-  }
-
-  .recharge-btn {
-    padding: 0 20px;
-  }
-}
-
-.menu-group {
-  margin-bottom: 30px;
-}
-
-.logout-wrap {
-  padding: 0 16px 40px;
-}
-
-/* 弹窗样式 */
-.custom-popup {
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-}
-
-.popup-title {
-  text-align: center;
-  margin: 20px 0;
-  font-size: 16px;
-  color: #323233;
-}
-
-/* 充值弹窗特有样式 */
-.wallet-recharge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 20px 20px;
-
-  .pay-list {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 24px;
-
-    .pay-item {
-      width: 47%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background-color: #f7f8fa;
-      border: 1px solid transparent;
-      border-radius: 12px;
-      padding: 20px 0;
-      position: relative;
-      transition: all 0.2s;
-
-      span {
-        margin-top: 10px;
-        font-size: 14px;
-        color: #323233;
-      }
-
-      .check-icon {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        font-size: 18px;
-      }
-    }
-
-    .active {
-      border-color: #4facfe;
-      background-color: rgba(79, 172, 254, 0.05);
-
-      span {
-        color: #4facfe;
-        font-weight: bold;
-      }
-    }
-  }
-
-  .amount-input {
-    background-color: #f7f8fa;
-    border-radius: 8px;
-  }
-}
+/* 原样保留你的 user.vue 样式 */
+.user-container { min-height: 100vh; background-color: #f7f8fa; }
+.header-section { height: 180px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 30px 20px 0; box-sizing: border-box; .user-profile { display: flex; align-items: center; .avatar-img { border: 3px solid rgba(255, 255, 255, 0.4); } .header-info { margin-left: 16px; color: #fff; display: flex; flex-direction: column; .name-row { display: flex; align-items: center; margin-bottom: 6px; .username { font-size: 20px; font-weight: bold; margin-right: 8px; } } .sub-name { font-size: 13px; opacity: 0.9; } } } }
+.asset-card { margin: -40px 16px 20px; background: #ffffff; border-radius: 12px; padding: 24px 20px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 10; .asset-info { display: flex; flex-direction: column; .asset-title { font-size: 13px; color: #969799; margin-bottom: 8px; } .asset-value { font-size: 28px; font-weight: bold; color: #323233; font-family: Arial, Helvetica, sans-serif; } } .recharge-btn { padding: 0 20px; } }
+.menu-group { margin-bottom: 30px; }
+.logout-wrap { padding: 0 16px 40px; }
+.custom-popup { border-top-left-radius: 20px; border-top-right-radius: 20px; }
+.popup-title { text-align: center; margin: 20px 0; font-size: 16px; color: #323233; }
+.wallet-recharge { display: flex; flex-direction: column; align-items: center; padding: 0 20px 20px; .pay-list { width: 100%; display: flex; justify-content: space-between; margin-bottom: 24px; .pay-item { width: 47%; display: flex; flex-direction: column; align-items: center; background-color: #f7f8fa; border: 1px solid transparent; border-radius: 12px; padding: 20px 0; position: relative; transition: all 0.2s; span { margin-top: 10px; font-size: 14px; color: #323233; } .check-icon { position: absolute; top: 8px; right: 8px; font-size: 18px; } } .active { border-color: #4facfe; background-color: rgba(79, 172, 254, 0.05); span { color: #4facfe; font-weight: bold; } } } .amount-input { background-color: #f7f8fa; border-radius: 8px; } }
 </style>
